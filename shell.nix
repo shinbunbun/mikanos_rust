@@ -7,8 +7,9 @@ in pkgs.mkShell {
     rust-analyzer
   ];
   shellHook = ''
+  rustup toolchain install nightly
   rustup component add rustfmt clippy
-  rustup target add x86_64-unknown-linux-musl
+  rustup component add --toolchain nightly rust-src
   '';
 
 #
