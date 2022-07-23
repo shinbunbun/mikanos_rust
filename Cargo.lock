@@ -29,7 +29,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "day_02b"
+name = "day_02"
 version = "0.1.0"
 dependencies = [
  "uefi",
