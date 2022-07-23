@@ -5,8 +5,11 @@
 #![feature(abi_efiapi)]
 #![feature(lang_items)]
 
+extern crate alloc;
+
+use alloc::format;
 use core::{
-    fmt::{write, Debug},
+    fmt::{write, Debug, Formatter},
     panic::PanicInfo,
     str::from_utf8,
 };
@@ -20,7 +23,7 @@ use uefi::{
     CString16,
 };
 
-// https://github.com/rust-lang/rust/issues/62785/
+// https://github.com/rust-lan&mut g/rust/issues/62785/
 #[used]
 #[no_mangle]
 pub static _fltused: i32 = 0;
@@ -30,16 +33,37 @@ fn get_memory_map(system_table: &mut SystemTable<Boot>) {
     let boot_services = system_table.boot_services();
     let mmap_buf = &mut [0; 4096 * 4];
     let (_, memmap_iter) = boot_services.memory_map(mmap_buf).unwrap();
-    for (i, m) in memmap_iter.enumerate() {
-        write(
-            system_table.stdout(),
-            format_args!(
-                "{}, {:?}, {}, {}, {:?}\n",
-                i, m.ty, m.phys_start, m.page_count, m.att
-            ),
-        )
-        .unwrap();
-    }
+    let file = open_file(system_table, "\\memmap");
+    if let FileType::Regular(mut file) = file {
+        if let Err(err) =
+            file.write("Index, Type, PhysicalStart, NumberOfPages, Attribute\n".as_bytes())
+        {
+            write(
+                system_table.stdout(),
+                format_args!("file write failed: {:?}\n", err),
+            )
+            .unwrap();
+            panic!("write failed");
+        }
+
+        for (i, m) in memmap_iter.enumerate() {
+            if let Err(err) = file.write(
+                format!(
+                    "{}, {:?}, {}, {}, {:?}\n",
+                    i, m.ty, m.phys_start, m.page_count, m.att
+                )
+                .as_bytes(),
+            ) {
+                write(
+                    system_table.stdout(),
+                    format_args!("file write failed: {:?}\n", err),
+                )
+                .unwrap();
+                panic!("write failed");
+            };
+        }
+        file.close();
+    };
 }
 
 fn open_file(system_table: &mut SystemTable<Boot>, file_path: &str) -> FileType {
@@ -79,7 +103,7 @@ fn open_file(system_table: &mut SystemTable<Boot>, file_path: &str) -> FileType 
         Ok(file_name) => file_name,
         Err(err) => {
             write(
-                system_table.stderr(),
+                system_table.stdout(),
                 format_args!("Convert CStr16 error: {:?}\n", err),
             )
             .unwrap();
@@ -92,7 +116,7 @@ fn open_file(system_table: &mut SystemTable<Boot>, file_path: &str) -> FileType 
         Ok(file) => file,
         Err(err) => {
             write(
-                system_table.stderr(),
+                system_table.stdout(),
                 format_args!("open file failed: {:?}\n", err),
             )
             .unwrap();
@@ -102,6 +126,66 @@ fn open_file(system_table: &mut SystemTable<Boot>, file_path: &str) -> FileType 
     // write(system_table.stdout(), format_args!("6\n")).unwrap();
 
     file.into_type().unwrap()
+}
+
+fn write_mmap<'a>(
+    system_table: &mut SystemTable<Boot>,
+    file: &FileType,
+    memmap_iter: impl ExactSizeIterator<Item = &'a MemoryDescriptor> + Clone,
+) {
+    /* if let FileType::Regular(mut file) = file {
+        if let Err(err) =
+            file.write("Index, Type, PhysicalStart, NumberOfPages, Attribute\n".as_bytes())
+        {
+            write(
+                system_table.stdout(),
+                format_args!("file write failed: {:?}\n", err),
+            )
+            .unwrap();
+            panic!("write failed");
+        }
+
+        for (i, m) in memmap_iter.enumerate() {
+            if let Err(err) = file.write(
+                format_args!(
+                    "{}, {:?}, {}, {}, {:?}\n",
+                    i, m.ty, m.phys_start, m.page_count, m.att,
+                )
+                .as_str()
+                .unwrap()
+                .as_bytes(),
+            ) {
+                write(
+                    system_table.stdout(),
+                    format_args!("file write failed: {:?}\n", err),
+                )
+                .unwrap();
+                panic!("write failed");
+            }
+        }
+        file.close()
+    }; */
+    /* let mut buf = [0; 4096];
+    let mut offset = 0;
+    while offset < data.len() {
+        let size = data.len() - offset;
+        if size > buf.len() {
+            size = buf.len();
+        }
+        buf[..size].copy_from_slice(&data[offset..offset + size]);
+        match file.write(&buf[..size]) {
+            Ok(_) => {}
+            Err(err) => {
+                write(
+                    system_table.stdout(),
+                    format_args!("write file failed: {:?}\n", err),
+                )
+                .unwrap();
+                panic!("write file failed");
+            }
+        }
+        offset += size;
+    } */
 }
 
 #[entry]
@@ -115,10 +199,6 @@ fn main(_handle: Handle, mut system_table: SystemTable<Boot>) -> Status {
     get_memory_map(&mut system_table);
 
     write(system_table.stdout(), format_args!("100\n")).unwrap();
-
-    open_file(&mut system_table, "memmap");
-
-    write(system_table.stdout(), format_args!("101\n")).unwrap();
 
     /* let mmap_buf: &mut [u8] = &mut [0; 4096];
     if let Err(err) = system_table.boot_services().memory_map(mmap_buf) {
