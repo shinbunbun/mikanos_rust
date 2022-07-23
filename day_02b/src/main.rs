@@ -43,7 +43,7 @@ fn get_memory_map(system_table: &mut SystemTable<Boot>) {
 }
 
 fn open_file(system_table: &mut SystemTable<Boot>, file_path: &str) -> FileType {
-    write(system_table.stdout(), format_args!("1\n")).unwrap();
+    // write(system_table.stdout(), format_args!("1\n")).unwrap();
     let sfs = if let Ok(sfs) = system_table
         .boot_services()
         .locate_protocol::<SimpleFileSystem>()
@@ -57,7 +57,7 @@ fn open_file(system_table: &mut SystemTable<Boot>, file_path: &str) -> FileType 
         .unwrap();
         panic!("no sfs");
     };
-    write(system_table.stdout(), format_args!("2\n")).unwrap();
+    // write(system_table.stdout(), format_args!("2\n")).unwrap();
 
     let mut directory = match sfs.open_volume() {
         Ok(x) => x,
@@ -70,10 +70,10 @@ fn open_file(system_table: &mut SystemTable<Boot>, file_path: &str) -> FileType 
             panic!("open volume failed");
         }
     };
-    write(system_table.stdout(), format_args!("3\n")).unwrap();
+    // write(system_table.stdout(), format_args!("3\n")).unwrap();
 
     let filename_buf: &mut [u16] = &mut [0; 256];
-    write(system_table.stdout(), format_args!("4\n")).unwrap();
+    // write(system_table.stdout(), format_args!("4\n")).unwrap();
 
     let file_name = match uefi::CStr16::from_str_with_buf(file_path, filename_buf) {
         Ok(file_name) => file_name,
@@ -86,7 +86,7 @@ fn open_file(system_table: &mut SystemTable<Boot>, file_path: &str) -> FileType 
             panic!("Convert CStr16 error");
         }
     };
-    write(system_table.stdout(), format_args!("5\n")).unwrap();
+    // write(system_table.stdout(), format_args!("5\n")).unwrap();
 
     let file = match directory.open(file_name, FileMode::CreateReadWrite, FileAttribute::empty()) {
         Ok(file) => file,
@@ -99,7 +99,7 @@ fn open_file(system_table: &mut SystemTable<Boot>, file_path: &str) -> FileType 
             panic!("open file failed");
         }
     };
-    write(system_table.stdout(), format_args!("6\n")).unwrap();
+    // write(system_table.stdout(), format_args!("6\n")).unwrap();
 
     file.into_type().unwrap()
 }
