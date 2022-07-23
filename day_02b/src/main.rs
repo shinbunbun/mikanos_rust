@@ -5,20 +5,8 @@
 #![feature(abi_efiapi)]
 #![feature(lang_items)]
 
-use core::{
-    fmt::{write, Debug},
-    panic::PanicInfo,
-    str::from_utf8,
-};
-use uefi::{
-    prelude::*,
-    proto::media::{
-        file::{Directory, File, FileAttribute, FileHandle, FileMode, RegularFile},
-        fs::SimpleFileSystem,
-    },
-    table::boot::{self, MemoryDescriptor, MemoryMapKey},
-    CString16,
-};
+use core::{fmt::write, panic::PanicInfo};
+use uefi::prelude::*;
 
 // https://github.com/rust-lang/rust/issues/62785/
 #[used]
@@ -56,30 +44,11 @@ fn get_memory_map(system_table: &mut SystemTable<Boot>) {
     }
 }
 
-/* fn open_file(handle:&Handle,boot: &BootServices,file_path:&str,mode:FileMode)->RegularFile{
-    let loaded_image = boot.handle_protocol::<LoadedImage>(*handle).unwrap_success().get();
-    let device=unsafe {(*loaded_image).device()};
-    let file_system = boot.handle_protocol::<SimpleFileSystem>(device).unwrap_success().get();
-    let mut root_dir: Directory = unsafe {(*file_system).open_volume().unwrap_success()};
-    let file_handle = root_dir.open(file_path,mode,FileAttribute::empty()).unwrap_success();
-    unsafe {RegularFile::new(file_handle)}
-}  */
-
 #[entry]
 fn main(_handle: Handle, mut system_table: SystemTable<Boot>) -> Status {
     write(system_table.stdout(), format_args!("Hello, world!\n")).unwrap();
     get_memory_map(&mut system_table);
     write(system_table.stdout(), format_args!("100\n")).unwrap();
-    /* let mmap_buf: &mut [u8] = &mut [0; 4096];
-    if let Err(err) = system_table.boot_services().memory_map(mmap_buf) {
-        write(
-            system_table.stdout(),
-            format_args!("Get memory map error: {:?}\n", err),
-        )
-        .unwrap();
-    } */
-    loop {}
-    /* uefi_services::init(&mut system_table).unwrap();
 
-    Status::SUCCESS */
+    loop {}
 }
