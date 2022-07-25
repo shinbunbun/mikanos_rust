@@ -45,6 +45,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "day_03a_loader"
+version = "0.1.0"
+dependencies = [
+ "uefi",
+ "uefi-services",
+]
+
+[[package]]
 name = "log"
 version = "0.4.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
