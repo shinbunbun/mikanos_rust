@@ -1,3 +1,5 @@
+// https://github.com/skoji/laranja-os/blob/osbook_day03b/bootloader/src/main.rs
+
 #![no_main]
 #![no_std]
 #![feature(abi_efiapi)]
