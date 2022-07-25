@@ -5,6 +5,7 @@ in pkgs.mkShell {
   buildInputs = with pkgs; [ 
     rustup
     rust-analyzer
+    lld
   ];
   shellHook = ''
   rustup toolchain install nightly
