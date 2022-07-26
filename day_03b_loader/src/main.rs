@@ -8,7 +8,7 @@
 #[macro_use]
 extern crate alloc;
 
-use core::{fmt::write, panic::PanicInfo};
+use core::fmt::write;
 use uefi::{
     prelude::*,
     proto::{
@@ -21,25 +21,31 @@ use uefi::{
     table::boot::{AllocateType, MemoryDescriptor, MemoryType},
 };
 
-// https://github.com/rust-lang/rust/issues/62785/
-#[used]
-#[no_mangle]
-pub static _fltused: i32 = 0;
-
 const KERNEL_BASE_ADDRESS: usize = 0x100000;
 
-// https://github.com/rust-lang/rust/issues/51540#issue-332112999
+/* // https://github.com/rust-lang/rust/issues/51540#issue-332112999
 #[lang = "oom"]
 // https://github.com/rust-lang/rust-analyzer/issues/4490#issuecomment-1074922003
 #[cfg(not(test))]
 extern "C" fn oom(_: core::alloc::Layout) -> ! {
     loop {}
-}
+} */
 
-#[panic_handler]
+/* #[panic_handler]
 #[cfg(not(test))]
 fn panic(_info: &PanicInfo) -> ! {
     loop {}
+} */
+
+fn init_uefi_services(system_table: &mut SystemTable<Boot>) {
+    if let Err(err) = uefi_services::init(system_table) {
+        write(
+            system_table.stdout(),
+            format_args!("uefi services init error: {:?}", err),
+        )
+        .unwrap();
+        panic!("uefi services init error");
+    }
 }
 
 fn open_root_dir(system_table: &mut SystemTable<Boot>) -> Directory {
@@ -218,6 +224,9 @@ fn paint_frame_buffer(system_table: &mut SystemTable<Boot>) {
 
 #[entry]
 fn main(handle: Handle, mut system_table: SystemTable<Boot>) -> Status {
+    // https://zenn.dev/yubrot/articles/d6e85d12ccf2c6#alloc
+    init_uefi_services(&mut system_table);
+
     write(system_table.stdout(), format_args!("Hello, world!\n")).unwrap();
 
     let mut root = open_root_dir(&mut system_table);
@@ -235,7 +244,7 @@ fn main(handle: Handle, mut system_table: SystemTable<Boot>) -> Status {
     // boot kernel
     unsafe {
         let entry_addr = *((KERNEL_BASE_ADDRESS + 24) as *mut usize);
-        let entry_point: extern "C" fn() = core::mem::transmute(entry_addr);
+        let entry_point: extern "sysv64" fn() = core::mem::transmute(entry_addr);
         (entry_point)();
     }
     uefi::Status::SUCCESS
