@@ -3,13 +3,15 @@
 
 #![no_main]
 #![no_std]
+#![feature(abi_efiapi)]
+#![feature(lang_items)]
 
 use core::{arch::asm, panic::PanicInfo};
 
 #[no_mangle]
-extern "C" fn kernel_main() {
-    unsafe {
-        loop {
+extern "sysv64" fn kernel_main() {
+    loop {
+        unsafe {
             asm!("hlt");
         }
     }
@@ -18,6 +20,16 @@ extern "C" fn kernel_main() {
 #[panic_handler]
 #[cfg(not(test))]
 fn panic(_info: &PanicInfo) -> ! {
+    loop {
+        unsafe {
+            asm!("hlt");
+        }
+    }
+}
+
+#[lang = "eh_personality"]
+#[cfg(not(test))]
+fn eh_personality() {
     loop {
         unsafe {
             asm!("hlt");
