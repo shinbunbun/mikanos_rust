@@ -39,10 +39,6 @@ dependencies = [
 [[package]]
 name = "day_03a_kernel"
 version = "0.1.0"
-dependencies = [
- "uefi",
- "uefi-services",
-]
 
 [[package]]
 name = "day_03a_loader"
@@ -62,6 +58,10 @@ dependencies = [
 
 [[package]]
 name = "day_03c_kernel"
+version = "0.1.0"
+
+[[package]]
+name = "day_03c_loader"
 version = "0.1.0"
 dependencies = [
  "uefi",

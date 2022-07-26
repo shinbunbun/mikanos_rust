@@ -3,11 +3,13 @@
 
 #![no_main]
 #![no_std]
+#![feature(abi_efiapi)]
+#![feature(lang_items)]
 
 use core::{arch::asm, panic::PanicInfo};
 
 #[no_mangle]
-extern "C" fn kernel_main(frame_buffer_pointer: *mut u8, frame_buffer_size: usize) {
+extern "sysv64" fn kernel_main(frame_buffer_pointer: *mut u8, frame_buffer_size: usize) {
     for i in 0..frame_buffer_size {
         unsafe {
             *(frame_buffer_pointer.add(i)) = (i % 256) as u8;
@@ -18,6 +20,16 @@ extern "C" fn kernel_main(frame_buffer_pointer: *mut u8, frame_buffer_size: usiz
 #[panic_handler]
 #[cfg(not(test))]
 fn panic(_info: &PanicInfo) -> ! {
+    loop {
+        unsafe {
+            asm!("hlt");
+        }
+    }
+}
+
+#[lang = "eh_personality"]
+#[cfg(not(test))]
+fn eh_personality() {
     loop {
         unsafe {
             asm!("hlt");
